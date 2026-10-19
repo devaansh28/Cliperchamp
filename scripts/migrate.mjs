@@ -9,7 +9,7 @@
 // With AUTH_PROVIDER=local it also applies supabase/dev/local-auth.sql.
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import pg from 'pg';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -63,7 +63,7 @@ export async function migrate({ databaseUrl, reset = false, localAuth = false, l
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   migrate({
     databaseUrl: process.env.SUPABASE_DB_URL,
     reset: process.argv.includes('--reset'),

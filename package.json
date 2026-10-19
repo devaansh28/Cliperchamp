@@ -26,8 +26,8 @@
     "lint": "eslint .",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "node scripts/e2e-prepare.mjs && playwright test",
-    "db:migrate": "node scripts/migrate.mjs",
-    "db:reset": "node scripts/migrate.mjs --reset",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
+    "db:reset": "node --env-file-if-exists=.env scripts/migrate.mjs --reset",
     "fixtures": "node scripts/make-fixtures.mjs"
   },
   "devDependencies": {

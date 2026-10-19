@@ -11,7 +11,7 @@ const children = [];
 let stopping = false;
 
 for (const [name, args, color] of procs) {
-  const child = spawn('npm', args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env });
+  const child = spawn('npm', args, { stdio: ['ignore', 'pipe', 'pipe'], env: process.env, shell: process.platform === 'win32' });
   const prefix = `${color}[${name}]\x1b[0m `;
   const pipe = (stream, out) => {
     let buf = '';
