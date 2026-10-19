@@ -71,7 +71,12 @@ export function createApp(ctx: ServerContext, opts: AppOptions = {}): { app: Exp
     }
   });
   app.get('/health/metrics', async (req, res) => {
-    const token = process.env.METRICS_TOKEN;
+    // Without a token, metrics are only exposed outside production.
+    const token = ctx.env.METRICS_TOKEN;
+    if (!token && ctx.env.NODE_ENV === 'production') {
+      res.status(404).end();
+      return;
+    }
     if (token && req.header('authorization') !== `Bearer ${token}`) {
       res.status(401).end();
       return;

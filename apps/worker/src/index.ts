@@ -1,4 +1,5 @@
 import { mkdir } from 'node:fs/promises';
+import http from 'node:http';
 import { ConfigError, createBaseContext, createLogger, loadEnv, PgBossQueue } from '@clipforge/server-core';
 import { QUEUE_NAMES } from '@clipforge/shared';
 import { createWorkerContext } from './context.js';
@@ -35,6 +36,18 @@ async function main() {
   await queue.schedule(QUEUE_NAMES.cleanup, '*/15 * * * *');
   log.info({ renderConcurrency: env.RENDER_CONCURRENCY, tts: ctx.tts.provider }, 'worker ready');
 
+  // Liveness endpoint for orchestrators (and the end-to-end test harness). Exposes nothing else.
+  let health: http.Server | null = null;
+  if (env.WORKER_HEALTH_PORT) {
+    health = http
+      .createServer((req, res) => {
+        res.statusCode = req.url === '/health' ? 200 : 404;
+        res.setHeader('content-type', 'application/json');
+        res.end(req.url === '/health' ? JSON.stringify({ status: 'ok' }) : '{}');
+      })
+      .listen(env.WORKER_HEALTH_PORT);
+  }
+
   let stopping = false;
   const shutdown = async (signal: string) => {
     if (stopping) return;
@@ -42,6 +55,7 @@ async function main() {
     log.info({ signal }, 'worker shutting down; finishing active jobs');
     const force = setTimeout(() => process.exit(1), 60_000);
     force.unref();
+    health?.close();
     await queue.stop().catch(() => undefined);
     await ctx.assetServer.stop().catch(() => undefined);
     await ctx.pool.end().catch(() => undefined);

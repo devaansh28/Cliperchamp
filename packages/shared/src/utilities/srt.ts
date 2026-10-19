@@ -28,7 +28,7 @@ export function formatSrtTimestamp(totalMs: number): string {
 
 /** Parse SRT text into caption segments (timing source: imported). Strips simple HTML-like tags. */
 export function parseSrt(input: string, newId: () => string): CaptionSegment[] {
-  const text = input.replace(/^﻿/u, '').replace(/\r\n?/gu, '\n').trim();
+  const text = input.replace(/^\uFEFF/u, '').replace(/\r\n?/gu, '\n').trim();
   if (!text) return [];
   const blocks = text.split(/\n{2,}/u);
   const segments: CaptionSegment[] = [];

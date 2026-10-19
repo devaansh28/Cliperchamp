@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { pinoHttp } from 'pino-http';
-import { z, ZodError } from 'zod';
+import type { z} from 'zod';
+import { ZodError } from 'zod';
 import {
   ProviderError,
   ProviderNotConfiguredError,
@@ -65,6 +66,8 @@ export function securityHeaders(): RequestHandler {
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('referrer-policy', 'no-referrer');
     res.setHeader('x-frame-options', 'DENY');
+    // The API only returns JSON and media; nothing it serves should run scripts or be framed.
+    res.setHeader('content-security-policy', "default-src 'none'; frame-ancestors 'none'; sandbox");
     res.setHeader('cross-origin-resource-policy', 'cross-origin');
     next();
   };

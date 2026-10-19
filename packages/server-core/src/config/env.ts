@@ -3,8 +3,10 @@ import { z } from 'zod';
 const bool = z
   .enum(['true', 'false', '1', '0'])
   .transform((v) => v === 'true' || v === '1');
+/** Blank values in .env files mean "not set". */
+const blank = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
 const int = (def: number, min = 0, max = Number.MAX_SAFE_INTEGER) =>
-  z.coerce.number().int().min(min).max(max).default(def);
+  z.preprocess(blank, z.coerce.number().int().min(min).max(max).default(def));
 const optionalString = z
   .string()
   .optional()
@@ -25,9 +27,6 @@ export const EnvSchema = z.object({
   AUTH_JWT_SECRET: optionalString,
 
   SUPABASE_URL: optionalString,
-  /** Publishable key (newer Supabase projects) or the legacy anon key. Only needed by the frontend. */
-  SUPABASE_PUBLISHABLE_KEY: optionalString,
-  SUPABASE_ANON_KEY: optionalString,
   /** Legacy HS256 JWT secret. When unset, tokens are verified against the project's JWKS. */
   SUPABASE_JWT_SECRET: optionalString,
   /** Server-only. Used for Storage. Never expose to the browser. */
@@ -63,12 +62,14 @@ export const EnvSchema = z.object({
   ALIGN_BASE_URL: optionalString,
 
   RENDER_CONCURRENCY: int(1, 1, 8),
+  /** Optional port for the worker's liveness endpoint (GET /health). Disabled when unset. */
+  WORKER_HEALTH_PORT: z.preprocess(blank, z.coerce.number().int().min(1).max(65535).optional()),
   RENDER_MAX_DURATION_SECONDS: int(180, 5, 1800),
   RENDER_MAX_FILE_SIZE_MB: int(500, 1, 4096),
   RENDER_TIMEOUT_SECONDS: int(1800, 30, 7200),
   RENDER_RETENTION_DAYS: int(14, 1, 365),
   RENDER_BROWSER_EXECUTABLE: optionalString,
-  RENDER_GL: z.enum(['swangle', 'angle', 'egl', 'swiftshader', 'vulkan', 'angle-egl']).optional(),
+  RENDER_GL: z.preprocess(blank, z.enum(['swangle', 'angle', 'egl', 'swiftshader', 'vulkan', 'angle-egl']).optional()),
   TEMP_RENDER_DIR: z.string().default('.tmp/renders'),
   /** Remotion company license key (required for companies above Remotion's free-license threshold). */
   REMOTION_LICENSE_KEY: optionalString,
@@ -82,6 +83,8 @@ export const EnvSchema = z.object({
   QUOTA_EXPORTS: int(50),
 
   RATE_LIMIT_PER_MINUTE: int(300, 1),
+  /** Bearer token for /health/metrics. Without it, metrics are disabled in production. */
+  METRICS_TOKEN: optionalString,
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -143,4 +146,5 @@ export const SECRET_ENV_KEYS = [
   'MEDIA_API_KEY',
   'ALIGN_API_KEY',
   'REMOTION_LICENSE_KEY',
+  'METRICS_TOKEN',
 ] as const;
