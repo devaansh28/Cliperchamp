@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import { Field, Input } from '@/components/ui/input';
 import { Notice } from '@/components/ui/misc';
 import { api, errorMessage } from '@/lib/api';
 import { auth } from '@/lib/auth';
+import { ConnectedAccounts } from '@/features/social/ConnectedAccounts';
 import { qk } from '@/lib/query';
 
 export function SettingsPage() {
@@ -16,6 +18,18 @@ export function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+
+  // Result of a social OAuth round trip (the API redirects back here). Show it once, then clean the URL.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const result = params.get('social');
+    if (!result) return;
+    if (result === 'connected') toast.success(`Connected ${params.get('account') || 'account'}`, { id: 'social-oauth' });
+    else toast.error(params.get('message') || 'Could not connect the account.', { id: 'social-oauth' });
+    void qc.invalidateQueries({ queryKey: qk.social });
+    setParams({}, { replace: true });
+    document.getElementById('accounts')?.scrollIntoView();
+  }, [params, setParams, qc]);
 
   useEffect(() => {
     if (me.data) setDisplayName(me.data.displayName ?? '');
@@ -93,6 +107,8 @@ export function SettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      <ConnectedAccounts />
 
       <Card>
         <CardHeader>

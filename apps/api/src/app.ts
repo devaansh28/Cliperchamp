@@ -5,13 +5,14 @@ import { QUEUE_NAMES } from '@clipforge/shared';
 import { LocalAuthService } from './auth/local-auth.js';
 import { createTokenVerifier, type TokenVerifier } from './auth/verifier.js';
 import { cors, errorHandler, requestLogger, requireAuth, securityHeaders } from './middleware/middleware.js';
-import { apiRoutes, localAuthRoutes, localFileRoutes, type Services } from './routes/routes.js';
+import { apiRoutes, localAuthRoutes, localFileRoutes, socialOAuthRoutes, type Services } from './routes/routes.js';
 import { buildOpenApi } from './schemas/openapi.js';
 import { MediaService } from './services/media-service.js';
 import { createMetrics, renderStats, type Metrics } from './services/metrics.js';
 import { ProjectService } from './services/project-service.js';
 import { RenderService } from './services/render-service.js';
 import { ScriptService } from './services/script-service.js';
+import { SocialService } from './services/social-service.js';
 import { VoiceService } from './services/voice-service.js';
 import { AppError } from './utils/errors.js';
 
@@ -31,6 +32,7 @@ export function createApp(ctx: ServerContext, opts: AppOptions = {}): { app: Exp
     media: new MediaService(ctx),
     voice: new VoiceService(ctx),
     renders: new RenderService(ctx),
+    social: new SocialService(ctx),
     localAuth: ctx.env.AUTH_PROVIDER === 'local' ? new LocalAuthService(ctx.pool, ctx.env.AUTH_JWT_SECRET!) : null,
   };
 
@@ -100,6 +102,7 @@ export function createApp(ctx: ServerContext, opts: AppOptions = {}): { app: Exp
   if (services.localAuth) app.use('/api/auth', localAuthRoutes(services.localAuth, limiter(20), auth));
   if (ctx.storage instanceof LocalStorage) app.use('/files', localFileRoutes(ctx.storage));
 
+  app.use('/api/social/oauth', limiter(30), socialOAuthRoutes(ctx, services.social));
   app.use('/api', limiter(ctx.env.RATE_LIMIT_PER_MINUTE), auth, apiRoutes(ctx, services, { expensive: limiter(30) }));
 
   app.use((_req, _res, next) => next(new AppError(404, 'not_found', 'Route not found')));

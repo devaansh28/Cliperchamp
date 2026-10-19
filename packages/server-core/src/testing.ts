@@ -11,6 +11,8 @@ import { loadEnv, type Env } from './config/env.js';
 import { createBaseContext, type ServerContext } from './context.js';
 import { createLogger } from './logging/logger.js';
 import type { JobPayloads, JobQueue, QueueName, SendOptions } from './queue/queue.js';
+import type { SocialPlatform } from '@clipforge/shared';
+import type { PublishInput, PublishResult, SocialPlatformAdapter, SocialProfile, TokenSet } from './social/types.js';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:5432/clipforge_test';
@@ -82,4 +84,44 @@ export const FIXTURES_DIR = path.join(REPO_ROOT, 'fixtures/generated');
 
 export function ensureFixtures(): void {
   execFileSync(process.execPath, [path.join(REPO_ROOT, 'scripts/make-fixtures.mjs'), FIXTURES_DIR], { stdio: 'pipe' });
+}
+
+/** Base64 32-byte key for tests only. */
+export const TEST_SOCIAL_KEY = Buffer.alloc(32, 7).toString('base64');
+
+/**
+ * In-memory platform adapter for tests. Records what it was asked to do; `onPublish` decides the outcome.
+ * Never talks to a real platform.
+ */
+export class FakeSocialAdapter implements SocialPlatformAdapter {
+  readonly configured = true;
+  readonly published: PublishInput[] = [];
+  readonly revoked: TokenSet[] = [];
+  refreshed = 0;
+  profile: SocialProfile = { externalAccountId: 'ext-1', displayName: 'Test Channel', avatarUrl: null };
+  tokens: TokenSet = { accessToken: 'access-1', refreshToken: 'refresh-1', expiresAt: new Date(Date.now() + 3600_000), scopes: ['upload'] };
+  onPublish: (input: PublishInput) => Promise<PublishResult> = async () => ({ externalPostId: 'post-1', url: 'https://example.test/post-1' });
+
+  constructor(readonly platform: SocialPlatform) {}
+  authorizeUrl(state: string, redirectUri: string): string {
+    return `https://consent.example.test/${this.platform}?state=${encodeURIComponent(state)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+  }
+  async exchangeCode(code: string): Promise<TokenSet> {
+    if (code !== 'good-code') throw new Error('bad code');
+    return this.tokens;
+  }
+  async refresh(tokens: TokenSet): Promise<TokenSet> {
+    this.refreshed++;
+    return { ...tokens, accessToken: `refreshed-${this.refreshed}`, expiresAt: new Date(Date.now() + 3600_000) };
+  }
+  async fetchProfile(): Promise<SocialProfile> {
+    return this.profile;
+  }
+  async publish(input: PublishInput): Promise<PublishResult> {
+    this.published.push(input);
+    return this.onPublish(input);
+  }
+  async revoke(tokens: TokenSet): Promise<void> {
+    this.revoked.push(tokens);
+  }
 }

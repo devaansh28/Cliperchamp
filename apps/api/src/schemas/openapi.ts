@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   CreateProjectSchema,
   CreateRenderSchema,
+  PublishRequestSchema,
   CredentialsSchema,
   SaveTimelineSchema,
   ScriptRequestSchema,
@@ -56,6 +57,15 @@ const ops: Record<string, Record<string, Op>> = {
   '/api/media/stock/import': { post: { summary: 'Import stock media' } },
   '/api/voices': { get: { summary: 'Available TTS voices' } },
   '/api/voice/preview': { post: { summary: 'Short voice preview (audio bytes)', body: 'VoicePreview' } },
+  '/api/social/accounts': { get: { summary: 'Platforms (configured or not) and connected accounts. Tokens are never returned.' } },
+  '/api/social/{platform}/connect': { post: { summary: 'Start OAuth: returns the platform consent URL', params: ['platform'], responses: { '503': 'Platform not configured' } } },
+  '/api/social/oauth/{platform}/callback': { get: { summary: 'OAuth redirect target (browser); redirects back to the app', params: ['platform'], auth: false } },
+  '/api/social/accounts/{id}': { delete: { summary: 'Disconnect an account (revokes tokens where supported)', params: ['id'] } },
+  '/api/renders/{id}/publish': { post: { summary: 'Post a finished Full HD export to connected accounts, now or scheduled', body: 'PublishRequest', params: ['id'], responses: { '202': 'Queued', '422': 'Not allowed by platform rules' } } },
+  '/api/renders/{id}/publications': { get: { summary: 'Posts for an export', params: ['id'] } },
+  '/api/projects/{id}/publications': { get: { summary: 'Posts for a project', params: ['id'] } },
+  '/api/publications/{id}/cancel': { post: { summary: 'Cancel a post that has not started', params: ['id'] } },
+  '/api/publications/{id}/retry': { post: { summary: 'Retry a failed post', params: ['id'] } },
 };
 
 export function buildOpenApi(serverUrl: string) {
@@ -70,6 +80,7 @@ export function buildOpenApi(serverUrl: string) {
     VoiceRequest: schema(VoiceRequestSchema),
     VoicePreview: schema(VoicePreviewSchema),
     CreateRender: schema(CreateRenderSchema),
+    PublishRequest: schema(PublishRequestSchema),
   };
   const paths: Record<string, Record<string, unknown>> = {};
   for (const [p, methods] of Object.entries(ops)) {

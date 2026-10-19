@@ -1,4 +1,5 @@
 import type { RenderErrorCategory, RenderJobStatus } from '../constants/output.js';
+import type { PublishPrivacy, PublishStatus, SocialPlatform } from '../constants/social.js';
 import type { Script, ScriptRequest, ProjectSettings } from '../schemas/api.js';
 import type { Timeline } from '../schemas/timeline.js';
 
@@ -72,4 +73,42 @@ export interface IntegrationStatus {
 
 export interface ApiErrorBody {
   error: { code: string; message: string; requestId?: string; details?: unknown };
+}
+
+export interface SocialAccount {
+  id: string;
+  platform: SocialPlatform;
+  externalAccountId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  status: 'active' | 'needs_reconnect';
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface SocialPlatformStatus {
+  platform: SocialPlatform;
+  label: string;
+  configured: boolean;
+}
+
+export interface Publication {
+  id: string;
+  projectId: string;
+  renderJobId: string;
+  socialAccountId: string;
+  platform: SocialPlatform;
+  accountName: string | null;
+  status: PublishStatus;
+  trigger: 'auto' | 'manual';
+  title: string;
+  caption: string;
+  privacy: PublishPrivacy;
+  scheduledAt: string | null;
+  attempt: number;
+  externalPostId: string | null;
+  externalUrl: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
 }

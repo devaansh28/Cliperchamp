@@ -20,6 +20,9 @@ set of short-form video tools; see [docs/research](docs/research/) for what was 
 - Rendering: a separate worker renders with Remotion + FFmpeg from a frozen snapshot, reports progress,
   retries transient failures, can be cancelled, verifies the output with FFprobe, stores it privately
   and hands out short-lived signed download links.
+- Social posting: connect YouTube, TikTok and Instagram accounts, then post a finished export to
+  all of them at once, now or scheduled, or turn on auto-publish per project (off by default).
+  Needs your own developer app on each platform; see [docs/integrations.md](docs/integrations.md#social-publishing-youtube-shorts-tiktok-instagram-reels).
 - Usage limits per month (demo plan; nothing is ever charged).
 
 The preview in the editor and the render worker use **the same composition**

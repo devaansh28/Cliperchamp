@@ -2,6 +2,12 @@ import type {
   CaptionSegment,
   IntegrationStatus,
   MediaAsset,
+  ProjectSettings,
+  Publication,
+  PublishRequest,
+  SocialAccount,
+  SocialPlatform,
+  SocialPlatformStatus,
   ProjectDetail,
   ProjectSummary,
   RenderJob,
@@ -87,7 +93,7 @@ export const api = {
   },
   createProject: (name: string, template?: string) => request<ProjectSummary>('/projects', { method: 'POST', body: { name, template } }),
   getProject: (id: string) => request<ProjectDetail>(`/projects/${id}`),
-  updateProject: (id: string, patch: { name?: string; script?: Script | null; scriptInput?: Partial<ScriptRequest>; settings?: Partial<ProjectDetail['settings']> }) =>
+  updateProject: (id: string, patch: { name?: string; script?: Script | null; scriptInput?: Partial<ScriptRequest>; settings?: Partial<ProjectSettings> }) =>
     request<ProjectDetail>(`/projects/${id}`, { method: 'PATCH', body: patch }),
   saveTimeline: (id: string, timeline: Timeline, revision: number) =>
     request<{ revision: number; durationMs: number }>(`/projects/${id}/timeline`, { method: 'PUT', body: { timeline, revision } }),
@@ -130,6 +136,15 @@ export const api = {
   cancelRender: (id: string) => request<RenderJob>(`/renders/${id}/cancel`, { method: 'POST' }),
   renderDownload: (id: string) => request<{ url: string; expiresInSeconds: number }>(`/renders/${id}/download`),
   renderPlayback: (id: string) => request<{ url: string; expiresInSeconds: number }>(`/renders/${id}/playback`),
+
+  socialAccounts: () => request<{ platforms: SocialPlatformStatus[]; accounts: SocialAccount[] }>('/social/accounts'),
+  connectSocial: (platform: SocialPlatform) => request<{ authorizeUrl: string }>(`/social/${platform}/connect`, { method: 'POST' }),
+  disconnectSocial: (id: string) => request<void>(`/social/accounts/${id}`, { method: 'DELETE' }),
+  publishRender: (renderId: string, body: PublishRequest) =>
+    request<{ created: Publication[]; existing: Publication[] }>(`/renders/${renderId}/publish`, { method: 'POST', body }),
+  projectPublications: (projectId: string) => request<Publication[]>(`/projects/${projectId}/publications`),
+  cancelPublication: (id: string) => request<Publication>(`/publications/${id}/cancel`, { method: 'POST' }),
+  retryPublication: (id: string) => request<Publication>(`/publications/${id}/retry`, { method: 'POST' }),
 };
 
 export function errorMessage(err: unknown): string {

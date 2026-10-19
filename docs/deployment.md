@@ -28,6 +28,10 @@ Nothing in this repository deploys automatically. These are the steps for a prod
 - Give the worker a writable `TEMP_RENDER_DIR` with enough space for a few renders.
 - Graceful shutdown: SIGTERM stops taking jobs and waits up to 60 s.
 
+- Social posting (optional): set `SOCIAL_TOKEN_ENCRYPTION_KEY` and each platform's credentials on
+  **both** the API and the worker, register the redirect URIs, and keep the key stable (changing it
+  disconnects every account). Instagram needs exports reachable over public HTTPS.
+
 ## 4. Web (`apps/web`)
 - `VITE_API_BASE_URL=https://api.example.com VITE_AUTH_PROVIDER=supabase VITE_SUPABASE_URL=...
   VITE_SUPABASE_PUBLISHABLE_KEY=... npm run build -w @clipforge/web`

@@ -12,6 +12,7 @@ import type { WorkerContext } from '../context.js';
 import { buildCompositionInput, type StagedAsset } from '../render/composition-input.js';
 import { inspectSource, validateOutput } from '../render/media-probe.js';
 import { classifyError, PermanentJobError } from '../utils/job-errors.js';
+import { queueAutoPublish } from './publish-video.js';
 
 interface JobRow {
   id: string;
@@ -183,6 +184,8 @@ export async function handleRenderVideo(ctx: WorkerContext, renderJobId: string)
       await recordUsage(db, { userId: job.user_id, kind: 'export', quantity: 1, projectId: job.project_id, renderJobId: job.id });
     });
     log.info({ ms: Date.now() - started, sizeBytes: check.sizeBytes, durationMs: check.durationMs }, 'render completed');
+    // Opt-in auto-publishing. A failure here must not turn a finished export into a failed one.
+    await queueAutoPublish(ctx, job.id).catch((err: unknown) => log.error({ err: { name: (err as Error).name, message: (err as Error).message } }, 'auto-publish failed'));
   } catch (err) {
     const c = classifyError(err);
     const retry = c.retryable && job.attempt < job.max_attempts;

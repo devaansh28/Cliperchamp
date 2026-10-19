@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PUBLISH_PRIVACY } from '../constants/social.js';
 import { CaptionStyleSchema, TimelineSchema } from './timeline.js';
 
 export const ScriptRequestSchema = z.object({
@@ -26,11 +27,34 @@ export const ScriptSchema = z.object({
 });
 export type Script = z.infer<typeof ScriptSchema>;
 
+export const PublishDetailsSchema = z.object({
+  /** Used as the YouTube title. Other platforms only use the caption. */
+  title: z.string().trim().max(100).default(''),
+  caption: z.string().trim().max(2200).default(''),
+  privacy: z.enum(PUBLISH_PRIVACY).default('public'),
+});
+export type PublishDetails = z.infer<typeof PublishDetailsSchema>;
+
+/** Opt-in: post every finished Full HD export of this project to the chosen accounts. */
+export const AutoPublishSchema = PublishDetailsSchema.extend({
+  enabled: z.boolean().default(false),
+  accountIds: z.array(z.string().uuid()).max(20).default([]),
+});
+export type AutoPublishSettings = z.infer<typeof AutoPublishSchema>;
+
+export const PublishRequestSchema = PublishDetailsSchema.extend({
+  accountIds: z.array(z.string().uuid()).min(1, 'Choose at least one account').max(20),
+  /** ISO time to post later; omitted or past means now. */
+  scheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
+});
+export type PublishRequest = z.infer<typeof PublishRequestSchema>;
+
 export const ProjectSettingsSchema = z.object({
   template: z.string().max(40).default('story'),
   voice: z
     .object({ voiceId: z.string().max(80).default('en-us'), speed: z.number().min(0.5).max(2).default(1) })
     .default({ voiceId: 'en-us', speed: 1 }),
+  autoPublish: AutoPublishSchema.default({ enabled: false, accountIds: [], title: '', caption: '', privacy: 'public' }),
 });
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 

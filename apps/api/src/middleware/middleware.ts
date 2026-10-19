@@ -6,7 +6,10 @@ import { ZodError } from 'zod';
 import {
   ProviderError,
   ProviderNotConfiguredError,
+  PublishValidationError,
   QuotaExceededError,
+  SocialAuthError,
+  SocialPlatformError,
   StorageError,
   type Logger,
 } from '@clipforge/server-core';
@@ -118,6 +121,13 @@ export function errorHandler(log: Logger, metrics: Metrics) {
       status = err.transient ? 503 : 502;
       payload = body('provider_error', err.userMessage, id);
       log.warn({ err: { name: err.name, message: err.message }, reqId: id }, 'provider error');
+    } else if (err instanceof PublishValidationError) {
+      status = 422;
+      payload = body('unprocessable', err.message, id);
+    } else if (err instanceof SocialAuthError || err instanceof SocialPlatformError) {
+      status = err instanceof SocialPlatformError && err.transient ? 503 : 502;
+      payload = body('platform_error', err.userMessage, id);
+      log.warn({ err: { name: err.name, message: err.message }, reqId: id }, 'social platform error');
     } else if (err instanceof QuotaExceededError) {
       status = 402;
       payload = body('quota_exceeded', `You have reached the demo limit for ${err.kind.replace('_', ' ')} (${err.limit} ${err.unit}).`, id, {

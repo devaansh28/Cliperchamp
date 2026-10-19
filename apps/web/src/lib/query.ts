@@ -22,4 +22,6 @@ export const qk = {
   usage: ['usage'] as const,
   me: ['me'] as const,
   voices: ['voices'] as const,
+  social: ['social'] as const,
+  publications: (projectId: string) => ['publications', projectId] as const,
 };

@@ -6,6 +6,7 @@
 | API | `npm test -w @clipforge/api` | Auth, CRUD, search/sort, optimistic concurrency, cross-user isolation, upload validation, signed file URLs and Range, script generation through a fake OpenAI-compatible server (valid and malformed output), provider-not-configured errors, quotas, render job rules (dedupe, idempotency, owner-only access, cancel) |
 | RLS | (in the API suite) `apps/api/tests/rls.test.ts` | PostgreSQL policies as the `authenticated` role, composite foreign keys, no user writes to jobs or usage |
 | Worker | `npm test -w @clipforge/worker` | Real media normalization and a real Remotion render verified with FFprobe; corrupted media failure; cancellation; cleanup |
+| Social | in the API, worker and server-core suites | OAuth state, encrypted tokens hidden from the user role, publish rules, duplicate protection, scheduling, cancel/retry (API); upload, resume after a transient error, reconnect on auth errors, token refresh, auto-publish (worker); each platform adapter against a local fake HTTP server (server-core). No real platform is contacted |
 | Web | `npm test -w @clipforge/web` | Editor store (undo/redo, coalescing, save, conflict), timeline operations, form validation, progress component |
 | E2E | `npm run test:e2e` | Real browser against API + worker + web: sign up, create project, manual script, upload, rejected fake video, espeak voiceover, captions, style, undo/redo, autosave, export a 1080×1920 MP4, download and FFprobe it, reopen; second user cannot open the project |
 

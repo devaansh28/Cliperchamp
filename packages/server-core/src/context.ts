@@ -6,6 +6,7 @@ import { createScriptGenerator, type ScriptGenerator } from './providers/llm/llm
 import { createMediaProvider, type MediaProvider } from './providers/media/media.js';
 import { createTtsProvider, type TtsProvider } from './providers/tts/tts.js';
 import type { JobQueue } from './queue/queue.js';
+import { createSocialRegistry, type SocialRegistry } from './social/registry.js';
 import { LocalStorage, SupabaseStorage, type StorageAdapter } from './storage/storage.js';
 
 /** Dependencies shared by request handlers and job handlers. Tests build their own with fakes. */
@@ -19,6 +20,7 @@ export interface ServerContext {
   tts: TtsProvider;
   media: MediaProvider;
   alignment: AlignmentProvider;
+  social: SocialRegistry;
 }
 
 export function createStorage(env: Env): StorageAdapter {
@@ -39,5 +41,6 @@ export function createBaseContext(env: Env, log: Logger, queue: JobQueue): Serve
     tts: createTtsProvider(env),
     media: createMediaProvider(env),
     alignment: createAlignmentProvider(env),
+    social: createSocialRegistry(env),
   };
 }

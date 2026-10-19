@@ -10,6 +10,8 @@ import {
   CreateRenderSchema,
   CredentialsSchema,
   MediaImportSchema,
+  PublishRequestSchema,
+  SOCIAL_PLATFORMS,
   SaveTimelineSchema,
   ScriptRequestSchema,
   UpdateProjectSchema,
@@ -26,6 +28,7 @@ import { projectRepository } from '../repositories/project-repository.js';
 import type { MediaService } from '../services/media-service.js';
 import type { ProjectService } from '../services/project-service.js';
 import type { RenderService } from '../services/render-service.js';
+import type { SocialService } from '../services/social-service.js';
 import { narrationText, type ScriptService } from '../services/script-service.js';
 import type { VoiceService } from '../services/voice-service.js';
 import { AppError, assertUuid, badRequest, notFound } from '../utils/errors.js';
@@ -36,6 +39,7 @@ export interface Services {
   media: MediaService;
   voice: VoiceService;
   renders: RenderService;
+  social: SocialService;
   localAuth: LocalAuthService | null;
 }
 
@@ -299,6 +303,64 @@ export function apiRoutes(ctx: ServerContext, s: Services, limits: { expensive: 
     res.json(await s.renders.playbackUrl(userId(req), assertUuid(req.params.id, 'Render')));
   });
 
+  // Social accounts and publishing -------------------------------------------
+  const Platform = z.object({ platform: z.enum(SOCIAL_PLATFORMS) });
+  r.get('/social/accounts', async (req, res) => {
+    res.json({ platforms: s.social.platforms(), accounts: await s.social.listAccounts(userId(req)) });
+  });
+  r.post('/social/:platform/connect', limits.expensive, async (req, res) => {
+    const { platform } = parse(Platform, req.params);
+    res.json(await s.social.startConnect(userId(req), platform));
+  });
+  r.delete('/social/accounts/:id', async (req, res) => {
+    await s.social.disconnect(userId(req), assertUuid(req.params.id, 'Account'));
+    res.status(204).end();
+  });
+  r.post('/renders/:id/publish', limits.expensive, async (req, res) => {
+    const body = parse(PublishRequestSchema, req.body);
+    const result = await s.social.publish(userId(req), assertUuid(req.params.id, 'Render'), body);
+    res.status(result.created.length ? 202 : 200).json(result);
+  });
+  r.get('/renders/:id/publications', async (req, res) => {
+    res.json(await s.social.listForRender(userId(req), assertUuid(req.params.id, 'Render')));
+  });
+  r.get('/projects/:id/publications', async (req, res) => {
+    res.json(await s.social.listForProject(userId(req), assertUuid(req.params.id, 'Project')));
+  });
+  r.post('/publications/:id/cancel', async (req, res) => {
+    res.json(await s.social.cancel(userId(req), assertUuid(req.params.id, 'Post')));
+  });
+  r.post('/publications/:id/retry', limits.expensive, async (req, res) => {
+    res.json(await s.social.retry(userId(req), assertUuid(req.params.id, 'Post')));
+  });
+
+  return r;
+}
+
+/**
+ * OAuth callbacks. Platforms redirect the browser here (no API token), so the one-time state
+ * stored at connect time is what ties the callback to the user. Always redirects back to the app.
+ */
+export function socialOAuthRoutes(ctx: ServerContext, social: SocialService): Router {
+  const r = Router();
+  const webOrigin = ctx.env.WEB_ORIGIN.split(',')[0]!.trim().replace(/\/$/u, '');
+  r.get('/:platform/callback', async (req, res) => {
+    const back = (params: Record<string, string>) => res.redirect(303, `${webOrigin}/app/settings?${new URLSearchParams(params).toString()}#accounts`);
+    const platform = z.enum(SOCIAL_PLATFORMS).safeParse(req.params.platform);
+    const q = z.object({ code: z.string().min(1).max(2000).optional(), state: z.string().min(10).max(200).optional(), error: z.string().max(200).optional() }).safeParse(req.query);
+    if (!platform.success || !q.success) return back({ social: 'error', message: 'The connection response was not valid.' });
+    if (q.data.error || !q.data.code || !q.data.state) {
+      return back({ social: 'error', platform: platform.data, message: q.data.error === 'access_denied' ? 'Connection cancelled.' : 'The platform did not approve the connection.' });
+    }
+    try {
+      const account = await social.completeConnect(platform.data, q.data.code, q.data.state);
+      return back({ social: 'connected', platform: platform.data, account: account.displayName ?? '' });
+    } catch (err) {
+      const message = err instanceof AppError ? err.message : (err as { userMessage?: string }).userMessage ?? 'Could not connect the account. Please try again.';
+      ctx.log.warn({ err: { name: (err as Error).name, message: (err as Error).message }, platform: platform.data }, 'social connect failed');
+      return back({ social: 'error', platform: platform.data, message });
+    }
+  });
   return r;
 }
 

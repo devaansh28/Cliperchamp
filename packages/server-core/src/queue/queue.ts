@@ -18,18 +18,24 @@ export interface ProcessMediaJob {
   remote?: { provider: 'pexels'; externalId: string };
 }
 export type CleanupJob = Record<string, never>;
+export interface PublishVideoJob {
+  publishJobId: string;
+}
 
 export interface JobPayloads {
   [QUEUE_NAMES.renderVideo]: RenderVideoJob;
   [QUEUE_NAMES.generateVoice]: GenerateVoiceJob;
   [QUEUE_NAMES.processMedia]: ProcessMediaJob;
   [QUEUE_NAMES.cleanup]: CleanupJob;
+  [QUEUE_NAMES.publishVideo]: PublishVideoJob;
 }
 export type QueueName = keyof JobPayloads;
 
 export interface SendOptions {
   /** Deduplicates pending jobs with the same key. */
   singletonKey?: string;
+  /** Run no earlier than this time (scheduled posts). */
+  startAfter?: Date;
 }
 
 /** Queue interface; pg-boss today, swappable for BullMQ or a managed queue later. */
@@ -52,6 +58,7 @@ const QUEUE_POLICIES: Record<QueueName, { retryLimit: number; retryDelay: number
   [QUEUE_NAMES.generateVoice]: { retryLimit: 2, retryDelay: 10, expireInSeconds: 10 * 60 },
   [QUEUE_NAMES.processMedia]: { retryLimit: 2, retryDelay: 10, expireInSeconds: 15 * 60 },
   [QUEUE_NAMES.cleanup]: { retryLimit: 0, retryDelay: 0, expireInSeconds: 15 * 60 },
+  [QUEUE_NAMES.publishVideo]: { retryLimit: 3, retryDelay: 60, expireInSeconds: 45 * 60 },
 };
 
 export class PgBossQueue implements JobQueue {
@@ -68,7 +75,7 @@ export class PgBossQueue implements JobQueue {
   }
 
   async send<N extends QueueName>(name: N, data: JobPayloads[N], opts: SendOptions = {}): Promise<string | null> {
-    return this.boss.send(name, data as object, { ...QUEUE_POLICIES[name], retryBackoff: true, ...(opts.singletonKey ? { singletonKey: opts.singletonKey } : {}) });
+    return this.boss.send(name, data as object, { ...QUEUE_POLICIES[name], retryBackoff: true, ...(opts.singletonKey ? { singletonKey: opts.singletonKey } : {}), ...(opts.startAfter ? { startAfter: opts.startAfter } : {}) });
   }
 
   async work<N extends QueueName>(

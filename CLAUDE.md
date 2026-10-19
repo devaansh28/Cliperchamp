@@ -21,3 +21,8 @@ Monorepo (npm workspaces, Node 22.19+, strict TypeScript, ESM). Read `README.md`
 - Jobs: `apps/worker/src/jobs/*` (render-video is the main pipeline).
 - Migrations: `supabase/migrations`; dev-only auth shim and local auth in `supabase/dev`.
 - Editor state: `apps/web/src/features/editor/editor-store.ts` (undo/redo, autosave).
+
+## Social publishing
+- Adapters: `packages/server-core/src/social/*`; API: `apps/api/src/services/social-service.ts`; worker: `apps/worker/src/jobs/publish-video.ts`.
+- Never mark a post published unless the platform confirmed it. Never post to real accounts in tests (use `FakeSocialAdapter` or a local fake server).
+- Tokens are stored encrypted only; never return or log them.

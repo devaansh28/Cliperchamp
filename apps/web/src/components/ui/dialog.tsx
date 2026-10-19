@@ -50,6 +50,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   busy,
+  tone = 'destructive',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -58,6 +59,7 @@ export function ConfirmDialog({
   confirmLabel: string;
   onConfirm: () => void;
   busy?: boolean;
+  tone?: 'destructive' | 'default';
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,7 +72,7 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={busy}>
+          <Button variant={tone} onClick={onConfirm} disabled={busy}>
             {confirmLabel}
           </Button>
         </DialogFooter>

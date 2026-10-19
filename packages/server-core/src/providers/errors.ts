@@ -1,6 +1,6 @@
 /** Raised when an integration is not configured. The API turns it into a clear 503 with setup guidance. */
 export class ProviderNotConfiguredError extends Error {
-  constructor(readonly capability: 'llm' | 'tts' | 'media' | 'alignment', readonly hint: string) {
+  constructor(readonly capability: 'llm' | 'tts' | 'media' | 'alignment' | 'social', readonly hint: string) {
     super(`${capability} provider is not configured`);
     this.name = 'ProviderNotConfiguredError';
   }

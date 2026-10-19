@@ -121,3 +121,25 @@ test('another user cannot open someone else’s project', async ({ page, browser
   await expect(otherPage.getByText('Project not found')).toBeVisible();
   await other.close();
 });
+
+test('social accounts show as not set up when the server has no platform apps', async ({ page }) => {
+  await page.goto('/register');
+  await page.getByLabel('Email').fill(`social-${Date.now()}@example.com`);
+  await page.getByLabel('Password').fill('a-strong-password');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await page.goto('/app/settings');
+  const card = page.getByTestId('connected-accounts');
+  for (const platform of ['youtube', 'tiktok', 'instagram']) {
+    await expect(card.getByTestId(`platform-${platform}`)).toContainText('Not set up on this server');
+  }
+  // An OAuth error bounced back from the API is shown to the user and removed from the URL.
+  await page.goto('/app/settings?social=error&message=Connection+cancelled.#accounts');
+  await expect(page.getByText('Connection cancelled.')).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/settings$|\/app\/settings#accounts$/u);
+
+  await page.goto('/app/projects/new');
+  await page.getByRole('button', { name: 'Create and open editor' }).click();
+  await page.getByRole('button', { name: 'Export', exact: true }).click();
+  await expect(page.getByTestId('publish-panel')).toContainText('No accounts connected yet');
+});

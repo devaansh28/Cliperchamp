@@ -41,6 +41,14 @@ snapshot, and the composition renders exactly this data.
 5. The output is checked with FFprobe (codec, size, pixel format, fps, audio, duration), uploaded
    privately with a thumbnail, usage is recorded, and temp files are removed.
 
+## Social publishing
+`packages/server-core/src/social` has one adapter per platform (YouTube resumable upload, TikTok
+Content Posting API, Instagram Reels containers) behind `SocialPlatformAdapter`. The API handles
+OAuth (`/api/social/...`) and creates `publish_jobs` rows (one per export and account, unique);
+the worker's `publish-video` job uploads, saves the platform reference as soon as it exists so
+retries resume, and records the post URL. When a Full HD render completes, `queueAutoPublish`
+creates posts for projects that opted in; a failure there never fails the render.
+
 ## Queue
 pg-boss behind the `JobQueue` interface (`packages/server-core/src/queue`). Retries per queue,
 permanent errors complete the job without retrying, a cleanup job fails stale jobs, enforces

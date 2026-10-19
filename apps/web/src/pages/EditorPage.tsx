@@ -16,6 +16,7 @@ import { ScriptPanel } from '@/features/editor/panels/ScriptPanel';
 import { StylePanel } from '@/features/editor/panels/StylePanel';
 import { AudioPanel } from '@/features/editor/panels/VoicePanel';
 import { Preview } from '@/features/editor/Preview';
+import { PublishPanel } from '@/features/editor/PublishPanel';
 import { RenderPanel } from '@/features/editor/RenderPanel';
 import { Timeline } from '@/features/editor/Timeline';
 import { useAutosave, useEditorShortcuts } from '@/features/editor/use-autosave';
@@ -182,7 +183,12 @@ export default function EditorPage() {
             className="border-b border-border p-1.5"
           />
           <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto p-4">
-            {right === 'inspect' ? <Inspector timeline={timeline} byId={library.byId} /> : <RenderPanel projectId={p.id} />}
+            {right === 'inspect' ? <Inspector timeline={timeline} byId={library.byId} /> : (
+              <div className="space-y-4">
+                <RenderPanel projectId={p.id} />
+                <PublishPanel project={p} />
+              </div>
+            )}
           </div>
         </aside>
       </div>

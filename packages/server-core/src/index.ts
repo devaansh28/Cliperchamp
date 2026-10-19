@@ -13,3 +13,4 @@ export * from './queue/queue.js';
 export * from './usage/usage.js';
 export * from './context.js';
 export * from './render/snapshot.js';
+export * from './social/index.js';

@@ -61,6 +61,19 @@ export const EnvSchema = z.object({
   ALIGN_MODEL: optionalString,
   ALIGN_BASE_URL: optionalString,
 
+  /** 32-byte key (base64) that encrypts social account tokens at rest. Required to connect accounts. */
+  SOCIAL_TOKEN_ENCRYPTION_KEY: optionalString,
+  /** Google Cloud OAuth client with the YouTube Data API v3 enabled. */
+  YOUTUBE_CLIENT_ID: optionalString,
+  YOUTUBE_CLIENT_SECRET: optionalString,
+  /** TikTok developer app with Login Kit and the Content Posting API (Direct Post). */
+  TIKTOK_CLIENT_KEY: optionalString,
+  TIKTOK_CLIENT_SECRET: optionalString,
+  /** Meta app using "Instagram API with Instagram Login" (professional accounts). */
+  INSTAGRAM_APP_ID: optionalString,
+  INSTAGRAM_APP_SECRET: optionalString,
+  PUBLISH_CONCURRENCY: int(2, 1, 16),
+
   RENDER_CONCURRENCY: int(1, 1, 8),
   /** Optional port for the worker's liveness endpoint (GET /health). Disabled when unset. */
   WORKER_HEALTH_PORT: z.preprocess(blank, z.coerce.number().int().min(1).max(65535).optional()),
@@ -130,6 +143,18 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (env.MEDIA_PROVIDER === 'pexels' && !env.MEDIA_API_KEY) problems.push('MEDIA_API_KEY is required for MEDIA_PROVIDER=pexels');
   if (env.ALIGN_PROVIDER === 'openai-compatible' && (!env.ALIGN_BASE_URL || !env.ALIGN_MODEL)) problems.push('ALIGN_BASE_URL and ALIGN_MODEL are required for ALIGN_PROVIDER=openai-compatible');
 
+  if (env.SOCIAL_TOKEN_ENCRYPTION_KEY && Buffer.from(env.SOCIAL_TOKEN_ENCRYPTION_KEY, 'base64').length !== 32) {
+    problems.push('SOCIAL_TOKEN_ENCRYPTION_KEY must be 32 bytes, base64 encoded (openssl rand -base64 32)');
+  }
+  for (const [id, secret] of [
+    ['YOUTUBE_CLIENT_ID', 'YOUTUBE_CLIENT_SECRET'],
+    ['TIKTOK_CLIENT_KEY', 'TIKTOK_CLIENT_SECRET'],
+    ['INSTAGRAM_APP_ID', 'INSTAGRAM_APP_SECRET'],
+  ] as const) {
+    if (Boolean(env[id]) !== Boolean(env[secret])) problems.push(`${id} and ${secret} must be set together`);
+    if (env[id] && !env.SOCIAL_TOKEN_ENCRYPTION_KEY) problems.push(`SOCIAL_TOKEN_ENCRYPTION_KEY is required when ${id} is set`);
+  }
+
   if (problems.length > 0) throw new ConfigError(problems);
   return env;
 }
@@ -147,4 +172,8 @@ export const SECRET_ENV_KEYS = [
   'ALIGN_API_KEY',
   'REMOTION_LICENSE_KEY',
   'METRICS_TOKEN',
+  'SOCIAL_TOKEN_ENCRYPTION_KEY',
+  'YOUTUBE_CLIENT_SECRET',
+  'TIKTOK_CLIENT_SECRET',
+  'INSTAGRAM_APP_SECRET',
 ] as const;

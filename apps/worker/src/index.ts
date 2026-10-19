@@ -6,6 +6,7 @@ import { createWorkerContext } from './context.js';
 import { handleCleanup } from './jobs/cleanup.js';
 import { handleGenerateVoice } from './jobs/generate-voice.js';
 import { handleProcessMedia } from './jobs/process-media.js';
+import { handlePublishVideo } from './jobs/publish-video.js';
 import { handleRenderVideo } from './jobs/render-video.js';
 
 async function main() {
@@ -30,6 +31,7 @@ async function main() {
   await queue.work(QUEUE_NAMES.renderVideo, { concurrency: env.RENDER_CONCURRENCY }, (data) => handleRenderVideo(ctx, data.renderJobId));
   await queue.work(QUEUE_NAMES.generateVoice, { concurrency: 2 }, (data, meta) => handleGenerateVoice(ctx, data, meta.retryCount));
   await queue.work(QUEUE_NAMES.processMedia, { concurrency: 2 }, (data, meta) => handleProcessMedia(ctx, data, meta.retryCount));
+  await queue.work(QUEUE_NAMES.publishVideo, { concurrency: env.PUBLISH_CONCURRENCY }, (data) => handlePublishVideo(ctx, data.publishJobId));
   await queue.work(QUEUE_NAMES.cleanup, { concurrency: 1 }, async () => {
     await handleCleanup(ctx);
   });

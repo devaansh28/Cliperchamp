@@ -33,6 +33,7 @@ export const QUEUE_NAMES = {
   generateVoice: 'generate-voice',
   processMedia: 'process-media',
   cleanup: 'cleanup',
+  publishVideo: 'publish-video',
 } as const;
 
 export const ALLOWED_UPLOAD_MIME = {

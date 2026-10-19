@@ -8,11 +8,19 @@
   redact authorization headers, cookies, tokens, API keys, URLs and user-written text. Request logs
   omit query strings (signed URLs).
 
+- Social platform tokens are encrypted with AES-256-GCM (`SOCIAL_TOKEN_ENCRYPTION_KEY`) before
+  they are stored. The `authenticated` role cannot read the token columns at all (column grants),
+  the API never returns them, and only the worker decrypts them to post.
+- OAuth connections use a random one-time `state` stored server-side for 10 minutes and bound to
+  the user and platform; reused, expired or mismatched callbacks are rejected.
+
 ## Access control
 - Every table has RLS. The API runs user queries as `authenticated` with the caller's JWT claims,
   so PostgreSQL enforces ownership even if an API check is missed.
 - Composite foreign keys stop cross-user references (a clip cannot point at someone else's asset).
 - Users cannot update render jobs or usage events; only the worker (service role) can.
+- Users can create posts only for their own exports and accounts (composite foreign keys), only in
+  the `queued` state, and cannot change a post's status; the worker re-checks ownership before posting.
 - Unknown or foreign ids return 404 (no existence leaks). Tests cover cross-user access at the
   HTTP level (`apps/api/tests/api.test.ts`), the database level (`apps/api/tests/rls.test.ts`) and in
   the browser (`e2e/create-video.spec.ts`).
