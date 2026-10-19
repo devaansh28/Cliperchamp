@@ -1,0 +1,38 @@
+{
+  "name": "@clipforge/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/server.ts",
+    "start": "node --env-file-if-exists=../../.env dist/server.js",
+    "build": "node ../../scripts/build-node.mjs src/server.ts dist/server.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clipforge/shared": "0.1.0",
+    "@supabase/supabase-js": "^2.75.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "file-type": "^21.0.0",
+    "jose": "^6.1.0",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "pg-boss": "10.4.2",
+    "pino": "^9.14.0",
+    "pino-http": "^10.5.0",
+    "zod": "^4.1.12",
+    "@clipforge/server-core": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/supertest": "^6.0.3",
+    "esbuild": "^0.25.11",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.6",
+    "vitest": "^4.1.11"
+  }
+}

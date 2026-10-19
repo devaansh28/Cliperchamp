@@ -1,0 +1,33 @@
+{
+  "name": "@clipforge/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+    "start": "node --env-file-if-exists=../../.env dist/index.js",
+    "build": "node ../../scripts/build-node.mjs src/index.ts dist/index.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clipforge/shared": "0.1.0",
+    "@clipforge/video-engine": "0.1.0",
+    "@remotion/bundler": "4.0.537",
+    "@remotion/renderer": "4.0.537",
+    "pg": "^8.16.3",
+    "pg-boss": "10.4.2",
+    "pino": "^9.14.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.537",
+    "zod": "^4.1.12",
+    "@clipforge/server-core": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "esbuild": "^0.25.11",
+    "tsx": "^4.20.6",
+    "vitest": "^4.1.11"
+  }
+}
